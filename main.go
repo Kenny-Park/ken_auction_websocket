@@ -20,11 +20,6 @@ func main() {
 		Connector: connectRepository,
 	}
 
-	//socketService.Message = make(chan payloads.Payload)
-
-	// 메시지 전송용
-	//go socketService.Do()
-
 	// 웹소켓 핸들러
 	var socketHandler = apis.SocketHandler{
 		SocketService: socketService,

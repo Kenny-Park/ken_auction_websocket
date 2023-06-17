@@ -19,5 +19,6 @@ type Payload struct {
 	// 비딩 시간
 	BidTime time.Time `json:"bid_time"`
 	// 전송 타입
-	CastType codes.CastType `json:"-"`
+	CastType  codes.CastType `json:"-"`
+	Timestamp time.Time      `json:"timestamp"`
 }

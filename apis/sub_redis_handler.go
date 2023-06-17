@@ -6,6 +6,7 @@ import (
 	handler "websocket/apis/interfaces"
 	"websocket/business/payloads"
 	"websocket/business/services"
+	"websocket/common/codes"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -30,9 +31,10 @@ func (handler *SubRedisHandler) Init() {
 		}
 		if err := json.Unmarshal([]byte(msg.Payload), &payload); err == nil {
 			// 메시지 전달
-			bidders := handler.SocketService.Connector.GetBidders(payload.LotId)
-			for i := range bidders {
-				bidders[i].Message <- payload
+			en := handler.SocketService.Connector.GetLot(payload.LotId)
+			if en != nil {
+				payload.CastType = codes.MULTICAST
+				en.SendMessage(payload)
 			}
 		}
 	}

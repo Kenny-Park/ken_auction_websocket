@@ -1,74 +1,80 @@
 package repositories
 
 import (
-	"errors"
+	"log"
 	"sync"
+	"time"
 	"websocket/business/payloads"
+	"websocket/common/codes"
 	"websocket/repositories/entities"
 
 	"github.com/gorilla/websocket"
 )
 
 type ConnectorRepository struct {
-	connectors map[string][]*entities.ConnectEntity
-	connectId  int64
-	m          sync.Mutex
+	en map[string]*entities.ConnectEntity
+	m  sync.Mutex
 }
 
 func (m *ConnectorRepository) New() {
-	m.connectors = map[string][]*entities.ConnectEntity{}
-}
-
-// 새로운 커넥션 번호
-func (m *ConnectorRepository) newConnectId() int64 {
-	m.connectId += int64(1)
-	return m.connectId
+	m.en = map[string]*entities.ConnectEntity{}
 }
 
 // 고객삽입
-func (m *ConnectorRepository) In(lotId string, upgrade *websocket.Conn) *entities.ConnectEntity {
+func (m *ConnectorRepository) In(lotId string, upgrade *websocket.Conn,
+	bidderId string, bidderNm string) *entities.ConnectInfoEntity {
 	m.m.Lock()
 	defer m.m.Unlock()
-	connectId := m.newConnectId()
-	en := &entities.ConnectEntity{
-		ConnectId: connectId,
-		Conn:      upgrade,
-		Message:   make(chan payloads.Payload),
-		Out:       make(chan struct{}),
+
+	ci := &entities.ConnectInfoEntity{
+		Conn: upgrade,
 	}
-	go en.Do()
-	m.connectors[lotId] = append(m.connectors[lotId], en)
-	return en
+	if v, ok := m.en[lotId]; !ok {
+		en := &entities.ConnectEntity{}
+		en.Init()
+		ci.ConnectId = en.ConnectIdManager.New()
+		en.Connector = append(en.Connector, ci)
+		m.en[lotId] = en
+	} else {
+		ci.ConnectId = v.ConnectIdManager.New()
+		v.Connector = append(v.Connector, ci)
+		m.en[lotId] = v
+	}
+
+	if _, ok := m.en[lotId]; ok {
+		m.en[lotId].SendMessage(payloads.Payload{
+			LotId: lotId,
+			C: payloads.CustomerPayload{
+				ConnectionId: ci.ConnectId,
+				BidderId:     bidderId,
+				BidderNm:     bidderNm,
+				ConnectedAt:  time.Now(),
+				Token:        "",
+			},
+			Timestamp: time.Now(),
+			CastType:  codes.ONLYONE,
+		})
+	}
+
+	return ci
 }
 
 // 고객정보 제공
-func (m *ConnectorRepository) GetBidders(lotId string) []*entities.ConnectEntity {
+func (m *ConnectorRepository) GetLot(lotId string) *entities.ConnectEntity {
 	m.m.Lock()
 	defer m.m.Unlock()
-	connectors := m.connectors[lotId]
-	return connectors
-}
-
-// 고객정보 제공
-func (m *ConnectorRepository) GetBidder(lotId string, connectId int64) (*websocket.Conn, error) {
-	m.m.Lock()
-	defer m.m.Unlock()
-	connectors := m.connectors[lotId]
-
-	for _, item := range connectors {
-		if item.ConnectId == connectId {
-			return item.Conn, nil
-		}
+	if v, ok := m.en[lotId]; ok {
+		return v
 	}
-	return nil, errors.New("no user")
+	return nil
 }
 
 // 고객 삭제
-func (m *ConnectorRepository) Out(lotId string, conn *entities.ConnectEntity) {
+func (m *ConnectorRepository) Out(lotId string, conn *entities.ConnectInfoEntity) {
 	m.m.Lock()
 	defer m.m.Unlock()
 
-	connectors := m.connectors[lotId]
+	connectors := m.en[lotId].Connector
 	index := 0
 	for i, item := range connectors {
 		if item.ConnectId == conn.ConnectId {
@@ -76,15 +82,17 @@ func (m *ConnectorRepository) Out(lotId string, conn *entities.ConnectEntity) {
 			break
 		}
 	}
+
 	if index-1 >= 0 && index+1 < len(connectors) {
-		m.connectors[lotId] = append(connectors[:index-1], connectors[index+1:]...)
+		m.en[lotId].Connector = append(connectors[:index-1], connectors[index+1:]...)
 	} else if index-1 < 0 {
-		m.connectors[lotId] = connectors[1:]
+		m.en[lotId].Connector = connectors[1:]
 	} else {
-		m.connectors[lotId] = connectors[:len(connectors)-1]
+		m.en[lotId].Connector = connectors[:len(connectors)-1]
 	}
 
 	// 커넥션 종료
-	conn.Out <- struct{}{}
-
+	if err := conn.Conn.Close(); err != nil {
+		log.Println("deleted user")
+	}
 }
