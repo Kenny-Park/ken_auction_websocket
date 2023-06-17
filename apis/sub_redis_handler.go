@@ -3,6 +3,7 @@ package apis
 import (
 	"context"
 	"encoding/json"
+	"log"
 	handler "websocket/apis/interfaces"
 	"websocket/business/payloads"
 	"websocket/business/services"
@@ -18,16 +19,21 @@ type SubRedisHandler struct {
 
 // @Description redis subscribe
 func (handler *SubRedisHandler) Init() {
+
 	var ctx = context.Background()
 	var redisClient = redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
+
+	defer redisClient.Close()
+
 	subscriber := redisClient.Subscribe(ctx, "ken-bid-data")
 	payload := payloads.Payload{}
 	for {
 		msg, err := subscriber.ReceiveMessage(ctx)
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			break
 		}
 		if err := json.Unmarshal([]byte(msg.Payload), &payload); err == nil {
 			// 메시지 전달
