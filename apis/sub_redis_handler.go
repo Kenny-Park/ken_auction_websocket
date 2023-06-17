@@ -30,7 +30,10 @@ func (handler *SubRedisHandler) Init() {
 		}
 		if err := json.Unmarshal([]byte(msg.Payload), &payload); err == nil {
 			// 메시지 전달
-			handler.SocketService.Message <- payload
+			bidders := handler.SocketService.Connector.GetBidders(payload.LotId)
+			for i := range bidders {
+				bidders[i].Message <- payload
+			}
 		}
 	}
 }
