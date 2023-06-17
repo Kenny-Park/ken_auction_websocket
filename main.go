@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"websocket/apis"
-	"websocket/business/payloads"
 	"websocket/business/services"
 	"websocket/repositories"
 
@@ -21,7 +20,7 @@ func main() {
 		Connector: connectRepository,
 	}
 
-	socketService.Message = make(chan payloads.Payload)
+	//socketService.Message = make(chan payloads.Payload)
 
 	// 메시지 전송용
 	//go socketService.Do()

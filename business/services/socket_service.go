@@ -1,12 +1,10 @@
 package services
 
 import (
-	"websocket/business/payloads"
 	"websocket/repositories"
 )
 
 type SocketService struct {
-	Message   chan payloads.Payload
 	Connector *repositories.ConnectorRepository
 }
 
