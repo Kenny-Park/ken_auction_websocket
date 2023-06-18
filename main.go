@@ -6,14 +6,14 @@ import (
 
 	"websocket/apis"
 	"websocket/business/services"
-	"websocket/repositories"
+	"websocket/connectors"
 
 	"github.com/gorilla/websocket"
 )
 
 func main() {
 
-	var connectRepository = &repositories.ConnectorRepository{}
+	var connectRepository = &connectors.ConnectorManager{}
 	connectRepository.New()
 
 	var socketService = &services.SocketService{

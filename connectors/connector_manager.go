@@ -1,4 +1,4 @@
-package repositories
+package connectors
 
 import (
 	"log"
@@ -6,37 +6,36 @@ import (
 	"time"
 	"websocket/business/payloads"
 	"websocket/common/codes"
-	"websocket/repositories/entities"
 
 	"github.com/gorilla/websocket"
 )
 
-type ConnectorRepository struct {
-	en map[string]*entities.ConnectEntity
+type ConnectorManager struct {
+	en map[string]*ConnectRoom
 	m  sync.Mutex
 }
 
-func (m *ConnectorRepository) New() {
-	m.en = map[string]*entities.ConnectEntity{}
+func (m *ConnectorManager) New() {
+	m.en = map[string]*ConnectRoom{}
 }
 
 // 고객삽입
-func (m *ConnectorRepository) In(lotId string, upgrade *websocket.Conn,
-	bidderId string, bidderNm string) *entities.ConnectInfoEntity {
+func (m *ConnectorManager) In(lotId string, upgrade *websocket.Conn,
+	bidderId string, bidderNm string) *ConnectUser {
 	m.m.Lock()
 	defer m.m.Unlock()
 
-	ci := &entities.ConnectInfoEntity{
+	ci := &ConnectUser{
 		Conn: upgrade,
 	}
 	if v, ok := m.en[lotId]; !ok {
-		en := &entities.ConnectEntity{}
+		en := &ConnectRoom{}
 		en.Init()
-		ci.ConnectId = en.ConnectIdManager.New()
+		ci.ConnectId = en.NewConnector()
 		en.Connector = append(en.Connector, ci)
 		m.en[lotId] = en
 	} else {
-		ci.ConnectId = v.ConnectIdManager.New()
+		ci.ConnectId = v.NewConnector()
 		v.Connector = append(v.Connector, ci)
 		m.en[lotId] = v
 	}
@@ -60,7 +59,7 @@ func (m *ConnectorRepository) In(lotId string, upgrade *websocket.Conn,
 }
 
 // 고객정보 제공
-func (m *ConnectorRepository) GetLot(lotId string) *entities.ConnectEntity {
+func (m *ConnectorManager) GetLot(lotId string) *ConnectRoom {
 	m.m.Lock()
 	defer m.m.Unlock()
 	if v, ok := m.en[lotId]; ok {
@@ -70,7 +69,7 @@ func (m *ConnectorRepository) GetLot(lotId string) *entities.ConnectEntity {
 }
 
 // 고객 삭제
-func (m *ConnectorRepository) Out(lotId string, conn *entities.ConnectInfoEntity) {
+func (m *ConnectorManager) Out(lotId string, conn *ConnectUser) {
 	m.m.Lock()
 	defer m.m.Unlock()
 

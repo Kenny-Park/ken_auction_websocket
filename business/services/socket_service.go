@@ -1,11 +1,11 @@
 package services
 
 import (
-	"websocket/repositories"
+	"websocket/connectors"
 )
 
 type SocketService struct {
-	Connector *repositories.ConnectorRepository
+	Connector *connectors.ConnectorManager
 }
 
 // socket service
