@@ -25,18 +25,18 @@ func (m *ConnectorManager) In(lotId string, upgrade *websocket.Conn,
 	m.m.Lock()
 	defer m.m.Unlock()
 
-	ci := &ConnectUser{
+	connectUser := &ConnectUser{
 		Conn: upgrade,
 	}
 	if v, ok := m.en[lotId]; !ok {
 		en := &ConnectRoom{}
 		en.Init()
-		ci.ConnectId = en.NewConnector()
-		en.Connector = append(en.Connector, ci)
+		connectUser.ConnectId = en.NewConnector()
+		en.Connector = append(en.Connector, connectUser)
 		m.en[lotId] = en
 	} else {
-		ci.ConnectId = v.NewConnector()
-		v.Connector = append(v.Connector, ci)
+		connectUser.ConnectId = v.NewConnector()
+		v.Connector = append(v.Connector, connectUser)
 		m.en[lotId] = v
 	}
 
@@ -44,7 +44,7 @@ func (m *ConnectorManager) In(lotId string, upgrade *websocket.Conn,
 		m.en[lotId].SendMessage(payloads.Payload{
 			LotId: lotId,
 			C: payloads.CustomerPayload{
-				ConnectionId: ci.ConnectId,
+				ConnectionId: connectUser.ConnectId,
 				BidderId:     bidderId,
 				BidderNm:     bidderNm,
 				ConnectedAt:  time.Now(),
@@ -55,7 +55,7 @@ func (m *ConnectorManager) In(lotId string, upgrade *websocket.Conn,
 		})
 	}
 
-	return ci
+	return connectUser
 }
 
 // 고객정보 제공
