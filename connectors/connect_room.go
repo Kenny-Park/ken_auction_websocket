@@ -10,7 +10,7 @@ type ConnectRoom struct {
 	mq                   *MessageQueue
 	Connector            []*ConnectUser
 	Out                  chan struct{}
-	isEnd                *ConnectToggleManager
+	endFlag              *ConnectToggleManager
 	connectUserIdManager *ConnectUserIdManager
 }
 
@@ -19,11 +19,11 @@ func (c *ConnectRoom) Init() {
 
 	c.mq = &MessageQueue{}
 	c.Out = make(chan struct{})
-	c.isEnd = &ConnectToggleManager{}
+	c.endFlag = &ConnectToggleManager{}
 	c.connectUserIdManager = &ConnectUserIdManager{}
 
 	// 스위치를 켠다
-	c.isEnd.On()
+	c.endFlag.On()
 	// 전송
 	go c.send()
 	// 채널
@@ -35,7 +35,7 @@ loop:
 	for {
 		p := c.mq.Get()
 		if len(p) <= 0 {
-			if !c.isEnd.Get() {
+			if !c.endFlag.Get() {
 				break loop
 			}
 			continue
@@ -70,7 +70,7 @@ loop:
 			break
 		// lot out
 		case <-c.Out:
-			c.isEnd.Off()
+			c.endFlag.Off()
 			break loop
 		}
 	}

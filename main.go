@@ -13,11 +13,11 @@ import (
 
 func main() {
 
-	var connectRepository = &connectors.ConnectorManager{}
-	connectRepository.New()
+	var connectorManager = &connectors.ConnectorManager{}
+	connectorManager.New()
 
 	var socketService = &services.SocketService{
-		Connector: connectRepository,
+		Connector: connectorManager,
 	}
 
 	// 웹소켓 핸들러
