@@ -19,7 +19,7 @@ func (m *ConnectorManager) New() {
 	m.en = map[string]*ConnectRoom{}
 }
 
-// 고객삽입
+// 고객 입장
 func (m *ConnectorManager) In(lotId string, upgrade *websocket.Conn,
 	bidderId string, bidderNm string) *ConnectUser {
 	m.m.Lock()
