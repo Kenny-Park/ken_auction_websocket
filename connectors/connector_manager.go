@@ -20,7 +20,7 @@ func (m *ConnectorManager) New() {
 }
 
 // 고객 입장
-func (m *ConnectorManager) In(lotId string, upgrade *websocket.Conn,
+func (m *ConnectorManager) In(roomId string, upgrade *websocket.Conn,
 	bidderId string, bidderNm string) *ConnectUser {
 	m.m.Lock()
 	defer m.m.Unlock()
@@ -28,30 +28,27 @@ func (m *ConnectorManager) In(lotId string, upgrade *websocket.Conn,
 	connectUser := &ConnectUser{
 		Conn: upgrade,
 	}
-	if v, ok := m.en[lotId]; !ok {
+	if v, ok := m.en[roomId]; !ok {
 		en := &ConnectRoom{}
 		en.Init()
 		connectUser.ConnectId = en.NewConnector()
 		en.Connector = append(en.Connector, connectUser)
-		m.en[lotId] = en
+		m.en[roomId] = en
 	} else {
 		connectUser.ConnectId = v.NewConnector()
 		v.Connector = append(v.Connector, connectUser)
-		m.en[lotId] = v
+		m.en[roomId] = v
 	}
 
-	if _, ok := m.en[lotId]; ok {
-		m.en[lotId].SendMessage(payloads.Payload{
-			LotId: lotId,
-			C: payloads.CustomerPayload{
+	if _, ok := m.en[roomId]; ok {
+		m.en[roomId].SendMessage(payloads.Payload{
+			RoomId: roomId,
+			ConnectionInfo: payloads.ConnectionInfo{
 				ConnectionId: connectUser.ConnectId,
-				BidderId:     bidderId,
-				BidderNm:     bidderNm,
 				ConnectedAt:  time.Now(),
 				Token:        "",
 			},
-			Timestamp: time.Now(),
-			CastType:  codes.ONLYONE,
+			CastType: codes.ONLYONE,
 		})
 	}
 
@@ -59,21 +56,21 @@ func (m *ConnectorManager) In(lotId string, upgrade *websocket.Conn,
 }
 
 // 고객정보 제공
-func (m *ConnectorManager) GetLot(lotId string) *ConnectRoom {
+func (m *ConnectorManager) GetRoom(roomId string) *ConnectRoom {
 	m.m.Lock()
 	defer m.m.Unlock()
-	if v, ok := m.en[lotId]; ok {
+	if v, ok := m.en[roomId]; ok {
 		return v
 	}
 	return nil
 }
 
 // 고객 삭제
-func (m *ConnectorManager) Out(lotId string, conn *ConnectUser) {
+func (m *ConnectorManager) Out(roomId string, conn *ConnectUser) {
 	m.m.Lock()
 	defer m.m.Unlock()
 
-	connectors := m.en[lotId].Connector
+	connectors := m.en[roomId].Connector
 	index := 0
 	for i, item := range connectors {
 		if item.ConnectId == conn.ConnectId {
@@ -83,11 +80,11 @@ func (m *ConnectorManager) Out(lotId string, conn *ConnectUser) {
 	}
 
 	if index-1 >= 0 && index+1 < len(connectors) {
-		m.en[lotId].Connector = append(connectors[:index-1], connectors[index+1:]...)
+		m.en[roomId].Connector = append(connectors[:index-1], connectors[index+1:]...)
 	} else if index-1 < 0 {
-		m.en[lotId].Connector = connectors[1:]
+		m.en[roomId].Connector = connectors[1:]
 	} else {
-		m.en[lotId].Connector = connectors[:len(connectors)-1]
+		m.en[roomId].Connector = connectors[:len(connectors)-1]
 	}
 
 	// 커넥션 종료

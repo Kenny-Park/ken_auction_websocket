@@ -30,19 +30,19 @@ func (s *SocketHandler) ws(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lotId := r.Header.Get("lot_id")
+	roomId := r.Header.Get("room_id")
 	bidderId := r.Header.Get("bidder_id")
 	bidderNm := r.Header.Get("bidder_nm")
 
 	// 참가
-	inUser := s.SocketService.Connector.In(lotId, conn,
+	inUser := s.SocketService.Connector.In(roomId, conn,
 		bidderId, bidderNm)
 
 	// message 대기
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
 			// 고객 삭제처리
-			s.SocketService.Connector.Out(lotId, inUser)
+			s.SocketService.Connector.Out(roomId, inUser)
 			return
 		}
 	}

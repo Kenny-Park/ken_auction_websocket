@@ -37,7 +37,7 @@ func (handler *SubRedisHandler) Init() {
 		}
 		if err := json.Unmarshal([]byte(msg.Payload), &payload); err == nil {
 			// 메시지 전달
-			en := handler.SocketService.Connector.GetLot(payload.LotId)
+			en := handler.SocketService.Connector.GetRoom(payload.RoomId)
 			if en != nil {
 				payload.CastType = codes.MULTICAST
 				en.SendMessage(payload)

@@ -64,8 +64,8 @@ loop:
 		select {
 		case <-t.C:
 			c.mq.Message(payloads.Payload{
-				Timestamp: time.Now(),
-				CastType:  codes.MULTICAST,
+				CreatedTime: time.Now(),
+				CastType:    codes.MULTICAST,
 			})
 			break
 		// lot out

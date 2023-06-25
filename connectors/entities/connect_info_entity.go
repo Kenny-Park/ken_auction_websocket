@@ -1,4 +1,4 @@
-package connectors
+package entities
 
 import (
 	"encoding/json"
@@ -10,13 +10,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type ConnectUser struct {
+type ConnectInfoEntity struct {
 	ConnectId int64
 	Conn      *websocket.Conn
 	m         sync.Mutex
 }
 
-func (c *ConnectUser) WriteMessage(message []payloads.Payload) {
+func (c *ConnectInfoEntity) WriteMessage(message []payloads.Payload) {
 	c.m.Lock()
 	defer c.m.Unlock()
 	for i := range message {
